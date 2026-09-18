@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>바코드 스캔</title>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  :root { --bg:#F7F7F8; --surface:#FFFFFF; --border:#E2E2E5; --text:#1D1D1F; --text-2:#6B6F76; --muted:#9BA0A6; --accent:#3A3D42; --danger:#C0392B; --font:'Pretendard','Apple SD Gothic Neo',-apple-system,sans-serif; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:var(--font); }
+  .app { max-width:480px; margin:0 auto; min-height:100vh; padding:0 20px; }
+  header { padding:24px 0 4px; text-align:center; }
+  header h1 { font-size:18px; margin:0 0 2px; }
+  header p { font-size:12px; color:var(--muted); margin:0; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; margin-top:16px; }
+  #reader { width:100%; border-radius:12px; overflow:hidden; }
+  .hint { text-align:center; color:var(--muted); font-size:13px; margin:12px 0; }
+  .btn { display:block; width:100%; padding:14px; border-radius:12px; border:none; font-family:var(--font); font-size:15px; font-weight:700; cursor:pointer; text-align:center; text-decoration:none; }
+  .btn-secondary { background:var(--surface); color:var(--text); border:1px solid var(--border); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🔎 바코드 스캔</h1>
+    <p>스캔하면 자동으로 위치 조회 화면으로 이동해요</p>
+  </header>
+  <div class="card">
+    <div id="reader"></div>
+    <p class="hint" id="hint-text">바코드를 화면 중앙에 맞춰주세요</p>
+    <a class="btn btn-secondary" id="btn-cancel" href="#">취소하고 돌아가기</a>
+  </div>
+</div>
+
+<script>
+// ⚠️⚠️ 아래 URL을 배포하신 Apps Script 웹앱 URL로 반드시 교체하세요 ⚠️⚠️
+// 예: "https://script.google.com/macros/s/AKfycb.../exec"
+const APPS_SCRIPT_URL = "여기에_APPS_SCRIPT_웹앱_URL을_붙여넣으세요";
+
+document.getElementById('btn-cancel').href = APPS_SCRIPT_URL;
+
+const formats = [
+  Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
+  Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
+  Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
+  Html5QrcodeSupportedFormats.CODABAR, Html5QrcodeSupportedFormats.ITF,
+  Html5QrcodeSupportedFormats.QR_CODE,
+];
+
+let done = false;
+const qr = new Html5Qrcode("reader", { formatsToSupport: formats, verbose: false });
+
+qr.start(
+  { facingMode: "environment" },
+  { fps: 10, qrbox: { width: 260, height: 160 } },
+  (decodedText) => {
+    if (done) return;
+    done = true;
+    document.getElementById('hint-text').textContent = '인식 완료! 이동 중...';
+    qr.stop().catch(()=>{}).finally(() => {
+      const sep = APPS_SCRIPT_URL.includes('?') ? '&' : '?';
+      window.location.href = APPS_SCRIPT_URL + sep + 'barcode=' + encodeURIComponent(decodedText);
+    });
+  },
+  () => {}
+).catch(() => {
+  document.querySelector('.card').innerHTML = `
+    <p style="color:var(--danger);text-align:center;font-size:14px;">카메라를 열 수 없어요.<br>브라우저 설정에서 카메라 권한을 허용해주세요.</p>
+    <a class="btn btn-secondary" href="${APPS_SCRIPT_URL}">돌아가기</a>`;
+});
+</script>
+</body>
+</html>
